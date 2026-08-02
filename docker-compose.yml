@@ -1,0 +1,55 @@
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  chaosbox-a:
+    build: .
+    ports:
+      - "8081:8080"
+    volumes:
+      - ./docker/chaosbox-a.config.json:/app/config.json:ro
+      - chaosbox-a-data:/app/data
+      - chaosbox-a-logs:/app/logs
+    command:
+      - -config=/app/config.json
+      - -file=/app/data/file.txt
+      - -data=/app/data
+      - -logs=/app/logs
+      - -redis=redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  chaosbox-b:
+    build: .
+    ports:
+      - "8082:8080"
+    volumes:
+      - ./docker/chaosbox-b.config.json:/app/config.json:ro
+      - chaosbox-b-data:/app/data
+      - chaosbox-b-logs:/app/logs
+    command:
+      - -config=/app/config.json
+      - -file=/app/data/file.txt
+      - -data=/app/data
+      - -logs=/app/logs
+      - -redis=redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  chaosbox-a-data:
+  chaosbox-a-logs:
+  chaosbox-b-data:
+  chaosbox-b-logs:
