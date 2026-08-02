@@ -205,7 +205,7 @@
       background: color-mix(in srgb, var(--rose) 18%, var(--bg2));
       border-color: color-mix(in srgb, var(--rose) 40%, var(--line));
     }
-    button:disabled { opacity: 0.5; cursor: wait; transform: none; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
     .load-grid {
       display: grid;
@@ -404,8 +404,8 @@
               <p>${k.hint}${running ? " · running" : ""}</p>
             </div>
             <div class="actions">
-              <button class="primary" data-action="load" data-path="${k.start}" data-params="${k.params.join(",")}">start</button>
-              <button class="danger" data-action="load" data-path="${k.stop}">stop</button>
+              <button class="primary" data-action="load" data-path="${k.start}" data-params="${k.params.join(",")}" ${running ? "disabled" : ""}>start</button>
+              <button class="danger" data-action="load" data-path="${k.stop}" ${running ? "" : "disabled"}>stop</button>
             </div>
           </div>`;
       }).join("");
@@ -488,6 +488,7 @@
       } finally {
         busy = false;
         document.querySelectorAll("button").forEach((b) => b.disabled = false);
+        renderLoadActions();
       }
     }
 
