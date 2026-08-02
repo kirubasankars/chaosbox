@@ -55,6 +55,19 @@ paths:
                 example: |
                   ip              version  status  self  load
                   127.0.0.1:8080  0.1.0    up      *     -
+  /count:
+    get:
+      tags: [counter]
+      summary: Current counter value (in-memory or Redis)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Count"
+        "500":
+          description: backend error (e.g. Redis unreachable)
   /count/incr:
     post:
       tags: [counter]

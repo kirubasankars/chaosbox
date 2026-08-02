@@ -2,6 +2,7 @@ package counter
 
 import (
 	"context"
+	"errors"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -24,6 +25,14 @@ func NewRedis(dsn string) (*Redis, error) {
 		return nil, err
 	}
 	return &Redis{client: client, key: "chaosbox:count"}, nil
+}
+
+func (c *Redis) Get(ctx context.Context) (int64, error) {
+	n, err := c.client.Get(ctx, c.key).Int64()
+	if errors.Is(err, redis.Nil) {
+		return 0, nil
+	}
+	return n, err
 }
 
 func (c *Redis) Incr(ctx context.Context) (int64, error) {

@@ -36,9 +36,19 @@ func TestRedisCounter_IncrDecr(t *testing.T) {
 
 	// Use deltas rather than absolute values so this also passes against a
 	// real, possibly non-empty Redis instance (CHAOSBOX_TEST_REDIS_DSN).
+	if n, err := c.Get(ctx); err != nil {
+		t.Fatalf("Get (missing key): %v", err)
+	} else if n != 0 && os.Getenv("CHAOSBOX_TEST_REDIS_DSN") == "" {
+		// miniredis starts empty; real Redis may already have a value.
+		t.Fatalf("Get (missing key) = %d; want 0", n)
+	}
+
 	base, err := c.Incr(ctx)
 	if err != nil {
 		t.Fatalf("Incr: %v", err)
+	}
+	if n, err := c.Get(ctx); err != nil || n != base {
+		t.Fatalf("Get = %d, %v; want %d, nil", n, err, base)
 	}
 	if n, err := c.Incr(ctx); err != nil || n != base+1 {
 		t.Fatalf("Incr = %d, %v; want %d, nil", n, err, base+1)

@@ -14,6 +14,10 @@ func NewMemory() *Memory {
 	return &Memory{}
 }
 
+func (c *Memory) Get(ctx context.Context) (int64, error) {
+	return c.n.Load(), nil
+}
+
 func (c *Memory) Incr(ctx context.Context) (int64, error) {
 	return c.n.Add(1), nil
 }
