@@ -71,6 +71,22 @@ real network/Redis code paths, not just unit-level logic:
 
 ## Docker
 
+Images are published to GitHub Container Registry on pushes to `main` and on
+`v*` tags:
+
+```bash
+docker pull ghcr.io/kive-sh/chaosbox:latest
+# or a release / commit tag, e.g. ghcr.io/kive-sh/chaosbox:1.0.0
+```
+
+If the package is private, authenticate first:
+
+```bash
+echo "$GITHUB_TOKEN" | docker login ghcr.io -u USERNAME --password-stdin
+```
+
+Build locally:
+
 ```bash
 docker build -t chaosbox .
 docker run --rm -p 8080:8080 \
