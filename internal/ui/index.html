@@ -474,6 +474,14 @@
         renderLoadActions();
         renderNodes(nodes);
         try {
+          const count = await api("/count", { label: "count" });
+          if (count && typeof count.count === "number") {
+            document.getElementById("count").textContent = count.count;
+          }
+        } catch (_) {
+          /* keep previous value; counter backend may be briefly unavailable */
+        }
+        try {
           const text = await api("/_cat/file", { label: "_cat/file" });
           document.getElementById("catFile").textContent =
             typeof text === "string" ? text : JSON.stringify(text, null, 2);

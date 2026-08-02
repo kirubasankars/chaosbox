@@ -114,6 +114,7 @@ func main() {
 	mux.HandleFunc("/", api.HealthHandler(cfg.Version, lc.Status))
 	mux.HandleFunc("/_cat/file", api.CatFileHandler(*filePath))
 	mux.HandleFunc("/_cat/nodes", membership.NodesHandler(mem))
+	mux.HandleFunc("/count", counter.GetHandler(ctr))
 	mux.HandleFunc("/count/incr", counter.IncrHandler(ctr))
 	mux.HandleFunc("/count/decr", counter.DecrHandler(ctr))
 	loadsim.RegisterHandlers(mux, lc, mem.Fanout)

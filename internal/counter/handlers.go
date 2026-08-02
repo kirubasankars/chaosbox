@@ -11,6 +11,17 @@ type countResponse struct {
 	Count int64 `json:"count"`
 }
 
+func GetHandler(c Counter) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		n, err := c.Get(r.Context())
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		httpx.WriteJSON(w, http.StatusOK, countResponse{Count: n})
+	}
+}
+
 func IncrHandler(c Counter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		n, err := c.Incr(r.Context())
