@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>chaosbox console</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;0,9..40,700;1,9..40,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg0: #12151a;
+      --bg1: #1a1f27;
+      --bg2: #232a34;
+      --line: #323b48;
+      --ink: #e8edf4;
+      --muted: #8b97a8;
+      --amber: #e6a23c;
+      --teal: #3ecfad;
+      --rose: #ef6b7b;
+      --ok: #5fd38d;
+      --shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      font-family: "DM Sans", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(1200px 600px at 10% -10%, rgba(230, 162, 60, 0.16), transparent 55%),
+        radial-gradient(900px 500px at 100% 0%, rgba(62, 207, 173, 0.12), transparent 50%),
+        linear-gradient(180deg, #0f1217 0%, var(--bg0) 40%, #10141a 100%);
+    }
+
+    .wrap {
+      width: min(1120px, calc(100% - 2rem));
+      margin: 0 auto;
+      padding: 1.5rem 0 2.5rem;
+    }
+
+    header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1.4rem;
+      animation: rise 0.5s ease both;
+    }
+    .brand {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: clamp(2rem, 4vw, 2.8rem);
+      font-weight: 600;
+      letter-spacing: -0.04em;
+      line-height: 1;
+      margin: 0;
+    }
+    .brand span { color: var(--amber); }
+    .sub {
+      margin: 0.45rem 0 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+    .meta {
+      text-align: right;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+    .meta strong { color: var(--ink); font-weight: 500; }
+    .pulse {
+      display: inline-block;
+      width: 0.55rem;
+      height: 0.55rem;
+      border-radius: 50%;
+      background: var(--ok);
+      margin-right: 0.35rem;
+      box-shadow: 0 0 0 0 rgba(95, 211, 141, 0.55);
+      animation: ping 1.8s ease infinite;
+    }
+    .pulse.err { background: var(--rose); box-shadow: none; animation: none; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 1rem;
+    }
+    @media (max-width: 860px) {
+      .grid { grid-template-columns: 1fr; }
+      header { flex-direction: column; align-items: flex-start; }
+      .meta { text-align: left; }
+    }
+
+    section {
+      background: color-mix(in srgb, var(--bg1) 88%, transparent);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 1rem 1.1rem 1.15rem;
+      backdrop-filter: blur(8px);
+      animation: rise 0.55s ease both;
+    }
+    section:nth-child(2) { animation-delay: 0.05s; }
+    section:nth-child(3) { animation-delay: 0.1s; }
+    section:nth-child(4) { animation-delay: 0.15s; }
+    h2 {
+      margin: 0 0 0.85rem;
+      font-size: 0.78rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .chips { display: flex; flex-wrap: wrap; gap: 0.55rem; }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      min-width: 6.5rem;
+      padding: 0.55rem 0.75rem;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--bg2);
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.82rem;
+      transition: border-color 0.2s, background 0.2s, transform 0.2s;
+    }
+    .chip.on {
+      border-color: color-mix(in srgb, var(--teal) 55%, var(--line));
+      background: color-mix(in srgb, var(--teal) 14%, var(--bg2));
+      transform: translateY(-1px);
+    }
+    .dot {
+      width: 0.55rem;
+      height: 0.55rem;
+      border-radius: 50%;
+      background: var(--muted);
+    }
+    .chip.on .dot { background: var(--teal); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.8rem;
+    }
+    th, td {
+      text-align: left;
+      padding: 0.55rem 0.35rem;
+      border-bottom: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
+    }
+    th {
+      color: var(--muted);
+      font-weight: 500;
+      font-size: 0.72rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    tr:last-child td { border-bottom: 0; }
+    .badge {
+      display: inline-block;
+      padding: 0.12rem 0.45rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      border: 1px solid var(--line);
+    }
+    .badge.up { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 40%, var(--line)); }
+    .badge.down { color: var(--rose); border-color: color-mix(in srgb, var(--rose) 40%, var(--line)); }
+    .self { color: var(--amber); }
+
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem;
+      align-items: center;
+    }
+    .count {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 2rem;
+      font-weight: 600;
+      letter-spacing: -0.04em;
+      min-width: 3ch;
+    }
+    button, .btn {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: var(--bg2);
+      color: var(--ink);
+      border-radius: 10px;
+      padding: 0.55rem 0.85rem;
+      font: 600 0.86rem/1 "DM Sans", sans-serif;
+      cursor: pointer;
+      transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+    }
+    button:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--amber) 45%, var(--line)); }
+    button:active { transform: translateY(0); }
+    button.primary {
+      background: linear-gradient(180deg, color-mix(in srgb, var(--amber) 88%, white), var(--amber));
+      color: #1a1206;
+      border-color: transparent;
+    }
+    button.danger {
+      background: color-mix(in srgb, var(--rose) 18%, var(--bg2));
+      border-color: color-mix(in srgb, var(--rose) 40%, var(--line));
+    }
+    button:disabled { opacity: 0.5; cursor: wait; transform: none; }
+
+    .load-grid {
+      display: grid;
+      gap: 0.75rem;
+    }
+    .load-card {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 0.65rem;
+      align-items: center;
+      padding: 0.75rem 0.8rem;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: var(--bg2);
+    }
+    .load-card h3 {
+      margin: 0;
+      font-size: 0.95rem;
+    }
+    .load-card p {
+      margin: 0.2rem 0 0;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-family: "IBM Plex Mono", monospace;
+    }
+    .actions { display: flex; gap: 0.4rem; }
+
+    label {
+      display: grid;
+      gap: 0.25rem;
+      font-size: 0.75rem;
+      color: var(--muted);
+      font-family: "IBM Plex Mono", monospace;
+    }
+    input {
+      width: 5.5rem;
+      border: 1px solid var(--line);
+      background: var(--bg0);
+      color: var(--ink);
+      border-radius: 8px;
+      padding: 0.4rem 0.5rem;
+      font: 500 0.82rem/1 "IBM Plex Mono", monospace;
+    }
+    .params {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+      margin-bottom: 0.85rem;
+      padding-bottom: 0.85rem;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .log {
+      margin-top: 1rem;
+      grid-column: 1 / -1;
+      animation-delay: 0.2s;
+    }
+    #log {
+      margin: 0;
+      max-height: 180px;
+      overflow: auto;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.75rem;
+      color: var(--muted);
+      white-space: pre-wrap;
+      line-height: 1.45;
+    }
+    #log .ok { color: var(--teal); }
+    #log .err { color: var(--rose); }
+
+    .empty { color: var(--muted); font-size: 0.85rem; }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: none; }
+    }
+    @keyframes ping {
+      0% { box-shadow: 0 0 0 0 rgba(95, 211, 141, 0.55); }
+      70% { box-shadow: 0 0 0 10px rgba(95, 211, 141, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(95, 211, 141, 0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1 class="brand">chaosbox<span>.</span>console</h1>
+        <p class="sub">Trigger APIs and watch cluster status from one page.</p>
+      </div>
+      <div class="meta">
+        <div><span id="liveDot" class="pulse"></span>live · <strong id="version">—</strong></div>
+        <div>updated <strong id="updated">—</strong></div>
+        <div><a href="/docs" style="color:var(--amber);text-decoration:none">swagger</a> · <a href="/metrics" style="color:var(--amber);text-decoration:none">metrics</a></div>
+      </div>
+    </header>
+
+    <div class="grid">
+      <section>
+        <h2>This node</h2>
+        <div class="chips" id="loadChips">
+          <div class="chip"><span class="dot"></span>cpu</div>
+          <div class="chip"><span class="dot"></span>memory</div>
+          <div class="chip"><span class="dot"></span>disk</div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Counter</h2>
+        <div class="row">
+          <div class="count" id="count">—</div>
+          <button class="primary" data-action="count" data-path="/count/incr">+ incr</button>
+          <button data-action="count" data-path="/count/decr">− decr</button>
+        </div>
+      </section>
+
+      <section>
+        <h2>Cluster nodes</h2>
+        <div id="nodes"><p class="empty">Loading…</p></div>
+      </section>
+
+      <section>
+        <h2>Load simulators</h2>
+        <div class="params">
+          <label>min_pct<input id="min_pct" type="number" value="60" min="1" max="100" /></label>
+          <label>max_pct<input id="max_pct" type="number" value="80" min="1" max="100" /></label>
+          <label>mb<input id="mb" type="number" value="" placeholder="auto" min="1" /></label>
+          <label>period<input id="period" type="number" value="10" min="1" /></label>
+        </div>
+        <div class="load-grid" id="loadActions"></div>
+      </section>
+
+      <section class="log">
+        <h2>Activity</h2>
+        <pre id="log"></pre>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const kinds = [
+      { key: "cpu", label: "CPU", hint: "pulse CPU load", start: "/load/cpu/start", stop: "/load/cpu/stop", params: ["min_pct", "max_pct", "period"] },
+      { key: "memory", label: "Memory", hint: "pulse memory hold", start: "/load/mem/start", stop: "/load/mem/stop", params: ["mb", "period"] },
+      { key: "disk", label: "Disk", hint: "pulse disk IO", start: "/load/disk/start", stop: "/load/disk/stop", params: ["mb", "period"] },
+      { key: "all", label: "All", hint: "cpu + mem + disk", start: "/load/all/start", stop: "/load/all/stop", params: ["min_pct", "max_pct", "mb", "period"] },
+    ];
+
+    const logEl = document.getElementById("log");
+    const loadState = { cpu: false, memory: false, disk: false };
+    let busy = false;
+
+    function log(msg, cls) {
+      const line = document.createElement("div");
+      if (cls) line.className = cls;
+      line.textContent = `${new Date().toLocaleTimeString()}  ${msg}`;
+      logEl.prepend(line);
+      while (logEl.childNodes.length > 40) logEl.removeChild(logEl.lastChild);
+    }
+
+    function qs(params) {
+      const p = new URLSearchParams();
+      for (const [k, v] of Object.entries(params)) {
+        if (v !== "" && v != null) p.set(k, v);
+      }
+      const s = p.toString();
+      return s ? `?${s}` : "";
+    }
+
+    function paramValues() {
+      return {
+        min_pct: document.getElementById("min_pct").value,
+        max_pct: document.getElementById("max_pct").value,
+        mb: document.getElementById("mb").value,
+        period: document.getElementById("period").value,
+      };
+    }
+
+    function renderLoadChips() {
+      const root = document.getElementById("loadChips");
+      root.innerHTML = ["cpu", "memory", "disk"].map((k) => {
+        const on = !!loadState[k];
+        return `<div class="chip ${on ? "on" : ""}"><span class="dot"></span>${k}: ${on}</div>`;
+      }).join("");
+    }
+
+    function renderLoadActions() {
+      const root = document.getElementById("loadActions");
+      root.innerHTML = kinds.map((k) => {
+        const running = k.key === "all"
+          ? (loadState.cpu || loadState.memory || loadState.disk)
+          : !!loadState[k.key];
+        return `
+          <div class="load-card">
+            <div>
+              <h3>${k.label}</h3>
+              <p>${k.hint}${running ? " · running" : ""}</p>
+            </div>
+            <div class="actions">
+              <button class="primary" data-action="load" data-path="${k.start}" data-params="${k.params.join(",")}">start</button>
+              <button class="danger" data-action="load" data-path="${k.stop}">stop</button>
+            </div>
+          </div>`;
+      }).join("");
+    }
+
+    function renderNodes(nodes) {
+      const root = document.getElementById("nodes");
+      if (!nodes || !nodes.length) {
+        root.innerHTML = `<p class="empty">No nodes reported.</p>`;
+        return;
+      }
+      const rows = nodes.map((n) => {
+        const load = n.load
+          ? ["cpu", "memory", "disk"].filter((k) => n.load[k]).join(",") || "-"
+          : "-";
+        return `<tr>
+          <td>${n.ip}${n.self ? ' <span class="self">*</span>' : ""}</td>
+          <td>${n.version || "-"}</td>
+          <td><span class="badge ${n.status}">${n.status}</span></td>
+          <td>${load}</td>
+        </tr>`;
+      }).join("");
+      root.innerHTML = `<table>
+        <thead><tr><th>ip</th><th>version</th><th>status</th><th>load</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+    }
+
+    async function api(path, { method = "GET", label } = {}) {
+      const res = await fetch(path, { method, headers: { Accept: "application/json" } });
+      const text = await res.text();
+      let body = text;
+      try { body = JSON.parse(text); } catch (_) {}
+      if (!res.ok) {
+        throw new Error(`${label || path} failed (${res.status}): ${typeof body === "string" ? body : JSON.stringify(body)}`);
+      }
+      return body;
+    }
+
+    async function refresh() {
+      try {
+        const [health, nodes] = await Promise.all([
+          api("/", { label: "health" }),
+          api("/ui/nodes", { label: "nodes" }),
+        ]);
+        document.getElementById("version").textContent = health.version || "n/a";
+        document.getElementById("updated").textContent = new Date().toLocaleTimeString();
+        document.getElementById("liveDot").className = "pulse";
+        Object.assign(loadState, { cpu: false, memory: false, disk: false }, health.load || {});
+        renderLoadChips();
+        renderLoadActions();
+        renderNodes(nodes);
+      } catch (err) {
+        document.getElementById("liveDot").className = "pulse err";
+        log(String(err.message || err), "err");
+      }
+    }
+
+    async function runAction(btn) {
+      if (busy) return;
+      busy = true;
+      document.querySelectorAll("button").forEach((b) => b.disabled = true);
+      try {
+        const path = btn.dataset.path;
+        let url = path;
+        if (btn.dataset.action === "load" && btn.dataset.params) {
+          const all = paramValues();
+          const picked = {};
+          for (const k of btn.dataset.params.split(",")) picked[k] = all[k];
+          url += qs(picked);
+        }
+        const body = await api(url, { method: "POST", label: path });
+        if (body && typeof body.count === "number") {
+          document.getElementById("count").textContent = body.count;
+        }
+        log(`${path} → ${typeof body === "string" ? body : JSON.stringify(body)}`, "ok");
+        await refresh();
+      } catch (err) {
+        log(String(err.message || err), "err");
+      } finally {
+        busy = false;
+        document.querySelectorAll("button").forEach((b) => b.disabled = false);
+      }
+    }
+
+    document.body.addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-action]");
+      if (btn) runAction(btn);
+    });
+
+    renderLoadChips();
+    renderLoadActions();
+    refresh();
+    setInterval(refresh, 2000);
+  </script>
+</body>
+</html>
