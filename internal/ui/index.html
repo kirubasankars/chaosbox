@@ -263,7 +263,16 @@
       grid-column: 1 / -1;
       animation-delay: 0.2s;
     }
-    #log {
+    .log + .log { animation-delay: 0.25s; }
+    h2 .path {
+      letter-spacing: 0;
+      text-transform: none;
+      font-weight: 500;
+      font-family: "IBM Plex Mono", monospace;
+      opacity: 0.75;
+      margin-left: 0.35rem;
+    }
+    #log, #catFile {
       margin: 0;
       max-height: 180px;
       overflow: auto;
@@ -273,6 +282,7 @@
       white-space: pre-wrap;
       line-height: 1.45;
     }
+    #catFile { max-height: 280px; color: var(--ink); }
     #log .ok { color: var(--teal); }
     #log .err { color: var(--rose); }
 
@@ -336,6 +346,11 @@
           <label>period<input id="period" type="number" value="10" min="1" /></label>
         </div>
         <div class="load-grid" id="loadActions"></div>
+      </section>
+
+      <section class="log">
+        <h2>File<span class="path">/_cat/file</span></h2>
+        <pre id="catFile">Loading…</pre>
       </section>
 
       <section class="log">
@@ -458,6 +473,13 @@
         renderLoadChips();
         renderLoadActions();
         renderNodes(nodes);
+        try {
+          const text = await api("/_cat/file", { label: "_cat/file" });
+          document.getElementById("catFile").textContent =
+            typeof text === "string" ? text : JSON.stringify(text, null, 2);
+        } catch (fileErr) {
+          document.getElementById("catFile").textContent = String(fileErr.message || fileErr);
+        }
       } catch (err) {
         document.getElementById("liveDot").className = "pulse err";
         log(String(err.message || err), "err");
