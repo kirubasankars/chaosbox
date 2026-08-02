@@ -65,7 +65,7 @@ docker-run: docker-build
 
 ## compose-up: start redis + two peered chaosbox nodes (chaosbox-a, chaosbox-b) via docker compose
 compose-up:
-	docker compose up --build -d
+	docker compose up --build --pull always -d
 
 ## compose-down: stop and remove the docker compose stack (add rm-volumes=1 to also drop volumes)
 compose-down:
