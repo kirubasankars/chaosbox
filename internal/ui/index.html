@@ -460,6 +460,17 @@
       return body;
     }
 
+    async function refreshCount() {
+      try {
+        const count = await api("/count", { label: "count" });
+        if (count && typeof count.count === "number") {
+          document.getElementById("count").textContent = count.count;
+        }
+      } catch (_) {
+        /* keep previous value; counter backend may be briefly unavailable */
+      }
+    }
+
     async function refresh() {
       try {
         const [health, nodes] = await Promise.all([
@@ -473,14 +484,6 @@
         renderLoadChips();
         renderLoadActions();
         renderNodes(nodes);
-        try {
-          const count = await api("/count", { label: "count" });
-          if (count && typeof count.count === "number") {
-            document.getElementById("count").textContent = count.count;
-          }
-        } catch (_) {
-          /* keep previous value; counter backend may be briefly unavailable */
-        }
         try {
           const text = await api("/_cat/file", { label: "_cat/file" });
           document.getElementById("catFile").textContent =
@@ -529,7 +532,9 @@
 
     renderLoadChips();
     renderLoadActions();
+    refreshCount();
     refresh();
+    setInterval(refreshCount, 2000);
     setInterval(refresh, 2000);
   </script>
 </body>
