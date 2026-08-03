@@ -60,6 +60,16 @@ func main() {
 	if err := os.MkdirAll(*logsDir, 0o755); err != nil {
 		log.Fatalf("logs dir: %v", err)
 	}
+	if err := os.MkdirAll(filepath.Dir(*filePath), 0o755); err != nil {
+		log.Fatalf("file dir: %v", err)
+	}
+	if _, err := os.Stat(*filePath); os.IsNotExist(err) {
+		if err := os.WriteFile(*filePath, nil, 0o644); err != nil {
+			log.Fatalf("file: %v", err)
+		}
+	} else if err != nil {
+		log.Fatalf("file: %v", err)
+	}
 
 	logFile, err := os.OpenFile(filepath.Join(*logsDir, "chaosbox.log"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
 	if err != nil {
