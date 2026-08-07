@@ -133,6 +133,7 @@ func main() {
 	mux.HandleFunc("/docs/openapi.yaml", docs.SpecHandler())
 	mux.HandleFunc("/ui", ui.Handler())
 	mux.HandleFunc("/ui/nodes", ui.NodesHandler(mem))
+	mux.HandleFunc("/log/error", api.LogErrorHandler())
 
 	handler := httpx.RequestLogger(mux)
 
