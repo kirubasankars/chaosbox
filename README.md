@@ -159,6 +159,7 @@ store.
 | `GET` | `/_cat/file` | contents of `-file` |
 | `GET` | `/_cat/nodes` | membership table incl. per-node load state (plain text) |
 | `POST` | `/count/incr` / `/count/decr` | counter ops |
+| `POST` | `/log/error` | emit error-level slog + HTTP 500 (Observe feature test) |
 | `POST` | `/load/cpu/start` / `/stop` | pulsing CPU load (`min_pct`, `max_pct`, `period`) |
 | `POST` | `/load/mem/start` / `/stop` | pulsing memory load (`mb`, `period`) |
 | `POST` | `/load/disk/start` / `/stop` | pulsing disk IO load (`mb`, `period`) |

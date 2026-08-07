@@ -14,6 +14,7 @@ tags:
   - name: cat
   - name: counter
   - name: load
+  - name: logs
   - name: metrics
   - name: ui
 paths:
@@ -94,6 +95,26 @@ paths:
                 $ref: "#/components/schemas/Count"
         "500":
           description: backend error (e.g. Redis unreachable)
+  /log/error:
+    post:
+      tags: [logs]
+      summary: Emit a deliberate error-level log and return 500 (Observe / OTEL feature test)
+      responses:
+        "500":
+          description: Error log emitted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: error
+                  msg:
+                    type: string
+                    example: log.error_emitted
+        "405":
+          description: Method not allowed
   /load/cpu/start:
     post:
       tags: [load]
