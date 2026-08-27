@@ -31,13 +31,16 @@ func main() {
 	configPath := flag.String("config", "", "path to config JSON (optional; built-in defaults apply when omitted)")
 	startupDelay := flag.Int("startup-delay", 0, "delay in seconds before starting listeners")
 	filePath := flag.String("file", "", "path to plain text file served by /_cat/file (default: <data>/file.txt)")
-	dataDir := flag.String("data", "./data", "data folder for disk IO load")
-	logsDir := flag.String("logs", "./logs", "logs folder for request and app logs")
+	dataDir := flag.String("data", "", "data folder for disk IO load (default: system temp dir)")
+	logsDir := flag.String("logs", "", "logs folder for chaosbox.log (default: stdout only)")
 	redisDSN := flag.String("redis", "", "Redis DSN (e.g. redis://localhost:6379/0); empty uses in-memory counter")
 	flag.Parse()
 
 	// Flag/config validation happens before the structured logger exists, so
 	// stay on the stdlib logger for these early fatals.
+	if *dataDir == "" {
+		*dataDir = filepath.Join(os.TempDir(), "chaosbox", "data")
+	}
 	if *filePath == "" {
 		*filePath = filepath.Join(*dataDir, "file.txt")
 	}
@@ -47,9 +50,6 @@ func main() {
 
 	if err := os.MkdirAll(*dataDir, 0o755); err != nil {
 		log.Fatalf("data dir: %v", err)
-	}
-	if err := os.MkdirAll(*logsDir, 0o755); err != nil {
-		log.Fatalf("logs dir: %v", err)
 	}
 	if err := os.MkdirAll(filepath.Dir(*filePath), 0o755); err != nil {
 		log.Fatalf("file dir: %v", err)
@@ -62,11 +62,18 @@ func main() {
 		log.Fatalf("file: %v", err)
 	}
 
-	logFile, err := os.OpenFile(filepath.Join(*logsDir, "chaosbox.log"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
-	if err != nil {
-		log.Fatalf("log file: %v", err)
+	var logOut io.Writer = os.Stdout
+	if *logsDir != "" {
+		if err := os.MkdirAll(*logsDir, 0o755); err != nil {
+			log.Fatalf("logs dir: %v", err)
+		}
+		logFile, err := os.OpenFile(filepath.Join(*logsDir, "chaosbox.log"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+		if err != nil {
+			log.Fatalf("log file: %v", err)
+		}
+		defer logFile.Close()
+		logOut = io.MultiWriter(os.Stdout, logFile)
 	}
-	defer logFile.Close()
 
 	cfg, err := config.Load(*configPath)
 	if err != nil {
@@ -77,7 +84,7 @@ func main() {
 	}
 
 	selfAddr := config.SelfFromListen(cfg.Listen)
-	logging.Init(io.MultiWriter(os.Stdout, logFile), cfg.Version, selfAddr)
+	logging.Init(logOut, cfg.Version, selfAddr)
 
 	var ctr counter.Counter
 	backend := "memory"

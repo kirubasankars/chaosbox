@@ -4,8 +4,8 @@ PKG         := ./cmd/chaosbox
 
 CONFIG      ?=
 FILE        ?=
-DATA        ?= data
-LOGS        ?= logs
+DATA        ?=
+LOGS        ?=
 REDIS       ?=
 STARTUP_DELAY ?=
 
@@ -15,6 +15,12 @@ RUN_ARGS += -config $(CONFIG)
 endif
 ifneq ($(FILE),)
 RUN_ARGS += -file $(FILE)
+endif
+ifneq ($(DATA),)
+RUN_ARGS += -data $(DATA)
+endif
+ifneq ($(LOGS),)
+RUN_ARGS += -logs $(LOGS)
 endif
 ifneq ($(REDIS),)
 RUN_ARGS += -redis $(REDIS)
@@ -31,9 +37,8 @@ all: build
 build:
 	go build -trimpath -o $(BIN_DIR)/$(BINARY) $(PKG)
 
-## run: build and run chaosbox (override via CONFIG=, FILE=, REDIS=, STARTUP_DELAY=)
+## run: build and run chaosbox (override via CONFIG=, FILE=, DATA=, LOGS=, REDIS=, STARTUP_DELAY=)
 run: build
-	@mkdir -p $(DATA) $(LOGS)
 	./$(BIN_DIR)/$(BINARY) $(RUN_ARGS)
 
 ## test: run the Go test suite
@@ -52,9 +57,11 @@ fmt:
 tidy:
 	go mod tidy
 
-## clean: remove build artifacts and local data/logs dirs
+## clean: remove build artifacts and optional local data/logs dirs
 clean:
-	rm -rf $(BIN_DIR) $(DATA) $(LOGS)
+	rm -rf $(BIN_DIR)
+	@if [ -n "$(DATA)" ]; then rm -rf $(DATA); fi
+	@if [ -n "$(LOGS)" ]; then rm -rf $(LOGS); fi
 
 ## docker-build: build the chaosbox Docker image
 docker-build:
