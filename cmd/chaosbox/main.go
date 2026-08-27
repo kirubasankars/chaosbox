@@ -28,27 +28,18 @@ import (
 )
 
 func main() {
-	configPath := flag.String("config", "", "path to config file")
+	configPath := flag.String("config", "", "path to config JSON (optional; built-in defaults apply when omitted)")
 	startupDelay := flag.Int("startup-delay", 0, "delay in seconds before starting listeners")
-	filePath := flag.String("file", "", "path to plain text file served by /_cat/file")
-	dataDir := flag.String("data", "", "data folder for disk IO load")
-	logsDir := flag.String("logs", "", "logs folder for request and app logs")
+	filePath := flag.String("file", "", "path to plain text file served by /_cat/file (default: <data>/file.txt)")
+	dataDir := flag.String("data", "./data", "data folder for disk IO load")
+	logsDir := flag.String("logs", "./logs", "logs folder for request and app logs")
 	redisDSN := flag.String("redis", "", "Redis DSN (e.g. redis://localhost:6379/0); empty uses in-memory counter")
 	flag.Parse()
 
 	// Flag/config validation happens before the structured logger exists, so
 	// stay on the stdlib logger for these early fatals.
-	if *configPath == "" {
-		log.Fatal("-config is required")
-	}
 	if *filePath == "" {
-		log.Fatal("-file is required")
-	}
-	if *dataDir == "" {
-		log.Fatal("-data is required")
-	}
-	if *logsDir == "" {
-		log.Fatal("-logs is required")
+		*filePath = filepath.Join(*dataDir, "file.txt")
 	}
 	if *startupDelay < 0 {
 		log.Fatal("-startup-delay must be >= 0")

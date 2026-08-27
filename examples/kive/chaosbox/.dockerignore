@@ -1,0 +1,8 @@
+.git
+.gitignore
+*.md
+_hooks
+_prometheus
+_docs
+tmp
+*.tmp
