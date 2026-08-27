@@ -4,12 +4,53 @@ A small HTTP service used for infra demos and testing: health/version,
 file cat, a counter (in-memory or Redis), CPU/memory/disk load simulators,
 peer membership tracking, and Prometheus metrics.
 
+## Quick start
+
+No config file or flags required — built-in defaults listen on `:8080` and
+use `./data` and `./logs` under the working directory.
+
+```bash
+make run
+# or:
+go build -o chaosbox ./cmd/chaosbox && ./chaosbox
+```
+
+```bash
+docker pull ghcr.io/kive-sh/chaosbox:latest
+docker run --rm -p 8080:8080 ghcr.io/kive-sh/chaosbox:latest
+```
+
+Then open [http://localhost:8080/ui](http://localhost:8080/ui) for the control
+console, or [http://localhost:8080/docs](http://localhost:8080/docs) for the
+API browser.
+
+```bash
+curl http://localhost:8080/
+curl -X POST http://localhost:8080/count/incr
+curl -X POST http://localhost:8080/load/cpu/start
+```
+
+## Deploy on Kive
+
+A starter single-node job lives under [`examples/kive/`](examples/kive/):
+
+```bash
+cp -R examples/kive/chaosbox workspace/jobs/chaosbox
+kive build
+kive deploy --jobs chaosbox
+kive health_check --jobs chaosbox --wait --verbose
+```
+
+The job pulls `ghcr.io/kive-sh/chaosbox:latest`, binds a Kive-assigned HTTP
+port, and needs no config mount. See [`examples/kive/README.md`](examples/kive/README.md)
+for smoke-test curls and optional peer/TLS config.
+
 ## Layout
 
 ```
 cmd/chaosbox/            entrypoint: flag parsing and wiring
 internal/
-  config/            config.json loading + validation
+  config/            config.json loading + validation (optional file)
   logging/           structured JSON slog setup (stdout + file, OTEL-friendly)
   metrics/           Prometheus collectors
   httpx/             shared HTTP helpers (JSON writers, query parsing, request logging)
@@ -19,20 +60,16 @@ internal/
   membership/        peer health tracking + /_cat/nodes
   docs/              OpenAPI spec + Swagger UI (/docs)
   ui/                single-page control console (/ui)
+examples/kive/       starter Kive job (job.conf + Compose template)
 ```
 
 ## Build & run
-
-```bash
-go build -o chaosbox ./cmd/chaosbox
-./chaosbox -config config.json -file data.txt -data ./data -logs ./logs
-```
 
 ### Makefile
 
 ```bash
 make build   # compile to bin/chaosbox
-make run     # build + run with local defaults (config.json, data.txt, ./data, ./logs)
+make run     # build + run with built-in defaults
 make test    # go test ./...
 make vet     # go vet ./...
 make fmt     # gofmt -l -w .
@@ -41,8 +78,10 @@ make clean   # remove bin/, data/, logs/
 make help    # list all targets
 ```
 
-`make run` accepts overrides, e.g. `make run CONFIG=other.json REDIS=redis://localhost:6379/0`.
-`make docker-build` / `make docker-run` build and run the image described below.
+`make run` accepts optional overrides, e.g.
+`make run CONFIG=other.json REDIS=redis://localhost:6379/0`.
+`make docker-build` / `make docker-run` build and run the image with no
+volume mounts required.
 
 ### Tests
 
@@ -60,14 +99,17 @@ real network/Redis code paths, not just unit-level logic:
 
 ### Flags
 
-| Flag | Description |
-|------|-------------|
-| `-config` | path to config JSON (required) |
-| `-file` | plain text file served by `/_cat/file` (required) |
-| `-data` | folder used by the disk load simulator (required) |
-| `-logs` | folder for `chaosbox.log` (required) |
-| `-redis` | Redis DSN for the counter backend; omit for in-memory |
-| `-startup-delay` | seconds to sleep before listening |
+| Flag | Default | Description |
+|------|---------|-------------|
+| `-config` | *(built-in defaults)* | path to config JSON; omit for `:8080`, no peers |
+| `-file` | `<data>/file.txt` | plain text file served by `/_cat/file` |
+| `-data` | `./data` | folder used by the disk load simulator |
+| `-logs` | `./logs` | folder for `chaosbox.log` |
+| `-redis` | *(in-memory)* | Redis DSN for a shared counter backend |
+| `-startup-delay` | `0` | seconds to sleep before listening |
+
+Add `-config` when you need peers, TLS, or a custom listen address. Add
+`-redis` when multiple nodes should share the same counter.
 
 ## Docker
 
@@ -85,26 +127,21 @@ If the package is private, authenticate first:
 echo "$GITHUB_TOKEN" | docker login ghcr.io -u USERNAME --password-stdin
 ```
 
-Build locally:
+Build and run locally (no volumes or args required):
 
 ```bash
 docker build -t chaosbox .
-docker run --rm -p 8080:8080 \
-  -v "$PWD/config.json:/app/config.json:ro" \
-  -v chaosbox-data:/app/data \
-  -v chaosbox-logs:/app/logs \
-  chaosbox
+docker run --rm -p 8080:8080 chaosbox
 ```
 
-The image bakes in default flags (`-config /app/config.json -file
-/app/data/file.txt -data /app/data -logs /app/logs`); override the command
-to change them, e.g. add `-redis redis://redis:6379/0` for the Redis counter
-backend. Mount your own `config.json` (and `peer_ca_cert` PEM, if used) into
-the container to configure peers/TLS.
+To override defaults, pass flags on the command, e.g.
+`docker run --rm -p 8080:8080 chaosbox -redis redis://redis:6379/0`.
+Mount a `config.json` (and `peer_ca_cert` PEM, if used) when configuring
+peers or TLS.
 
-### Docker Compose
+### Advanced: multi-node demo (Docker Compose)
 
-`docker-compose.yml` runs a small demo chaosbox cluster: a `redis` service (shared
+`docker-compose.yml` runs a small chaosbox cluster: a `redis` service (shared
 counter backend) plus two peered nodes, `chaosbox-a` and `chaosbox-b`, each
 configured with the other as its peer (`docker/chaosbox-a.config.json`,
 `docker/chaosbox-b.config.json`).
@@ -130,7 +167,10 @@ curl -X POST http://localhost:8081/load/cpu/start   # fans out to chaosbox-b too
 `rm-volumes=1` to `make compose-down` (or `-v` to `docker compose down`) to
 also drop the `chaosbox-a`/`chaosbox-b` data and log volumes.
 
-### config.json
+### config.json (optional)
+
+When omitted, chaosbox uses built-in defaults (`version` `0.1.0`, `listen`
+`:8080`, no peers). To customize, pass `-config path/to/config.json`:
 
 ```json
 {

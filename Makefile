@@ -2,14 +2,20 @@ BINARY      := chaosbox
 BIN_DIR     := bin
 PKG         := ./cmd/chaosbox
 
-CONFIG      ?= config.json
-FILE        ?= data.txt
+CONFIG      ?=
+FILE        ?=
 DATA        ?= data
 LOGS        ?= logs
 REDIS       ?=
 STARTUP_DELAY ?=
 
-RUN_ARGS := -config $(CONFIG) -file $(FILE) -data $(DATA) -logs $(LOGS)
+RUN_ARGS :=
+ifneq ($(CONFIG),)
+RUN_ARGS += -config $(CONFIG)
+endif
+ifneq ($(FILE),)
+RUN_ARGS += -file $(FILE)
+endif
 ifneq ($(REDIS),)
 RUN_ARGS += -redis $(REDIS)
 endif
@@ -25,10 +31,9 @@ all: build
 build:
 	go build -trimpath -o $(BIN_DIR)/$(BINARY) $(PKG)
 
-## run: build and run chaosbox with sane local defaults (override via CONFIG=, FILE=, DATA=, LOGS=, REDIS=)
+## run: build and run chaosbox (override via CONFIG=, FILE=, REDIS=, STARTUP_DELAY=)
 run: build
 	@mkdir -p $(DATA) $(LOGS)
-	@[ -f $(FILE) ] || echo "chaosbox demo file" > $(FILE)
 	./$(BIN_DIR)/$(BINARY) $(RUN_ARGS)
 
 ## test: run the Go test suite
@@ -55,13 +60,9 @@ clean:
 docker-build:
 	docker build -t $(BINARY) .
 
-## docker-run: build and run the chaosbox Docker image, mounting local config.json and named volumes for data/logs
+## docker-run: build and run the chaosbox Docker image (no config mount required)
 docker-run: docker-build
-	docker run --rm -p 8080:8080 \
-		-v "$(CURDIR)/$(CONFIG):/app/config.json:ro" \
-		-v chaosbox-data:/app/data \
-		-v chaosbox-logs:/app/logs \
-		$(BINARY)
+	docker run --rm -p 8080:8080 $(BINARY)
 
 ## compose-up: start redis + two peered chaosbox nodes (chaosbox-a, chaosbox-b) via docker compose
 compose-up:

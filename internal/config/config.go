@@ -20,17 +20,57 @@ type Config struct {
 	PeerCACert   string   `json:"peer_ca_cert"`
 }
 
+// Default returns the built-in configuration used when no config file is
+// provided or when JSON fields are omitted.
+func Default() Config {
+	return Config{
+		Version:      "0.1.0",
+		Listen:       ":8080",
+		PeerCheckSec: 5,
+	}
+}
+
 func Load(path string) (Config, error) {
+	path = strings.TrimSpace(path)
+	if path == "" {
+		return Default(), nil
+	}
+
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return Config{}, fmt.Errorf("read config: %w", err)
 	}
 
-	var cfg Config
-	if err := json.Unmarshal(data, &cfg); err != nil {
+	var fileCfg Config
+	if err := json.Unmarshal(data, &fileCfg); err != nil {
 		return Config{}, fmt.Errorf("parse config: %w", err)
 	}
-	return cfg, nil
+	return merge(Default(), fileCfg), nil
+}
+
+func merge(base, file Config) Config {
+	if file.Version != "" {
+		base.Version = file.Version
+	}
+	if file.Listen != "" {
+		base.Listen = file.Listen
+	}
+	if file.TLSCert != "" {
+		base.TLSCert = file.TLSCert
+	}
+	if file.TLSKey != "" {
+		base.TLSKey = file.TLSKey
+	}
+	if file.Peers != nil {
+		base.Peers = file.Peers
+	}
+	if file.PeerCheckSec != 0 {
+		base.PeerCheckSec = file.PeerCheckSec
+	}
+	if file.PeerCACert != "" {
+		base.PeerCACert = file.PeerCACert
+	}
+	return base
 }
 
 func (c Config) Validate() error {

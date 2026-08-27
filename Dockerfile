@@ -26,4 +26,4 @@ USER chaosbox
 EXPOSE 8080
 
 ENTRYPOINT ["chaosbox"]
-CMD ["-config", "/app/config.json", "-file", "/app/data/file.txt", "-data", "/app/data", "-logs", "/app/logs"]
+CMD []
