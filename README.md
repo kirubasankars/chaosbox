@@ -6,8 +6,8 @@ peer membership tracking, and Prometheus metrics.
 
 ## Quick start
 
-No config file or flags required — built-in defaults listen on `:8080` and
-use `./data` and `./logs` under the working directory.
+No config file or flags required — built-in defaults listen on `:8080`, log to
+stdout, and use a system temp directory for disk-load scratch files.
 
 ```bash
 make run
@@ -26,9 +26,24 @@ API browser.
 
 ```bash
 curl http://localhost:8080/
-curl -X POST http://localhost:8080/count/incr
-curl -X POST http://localhost:8080/load/cpu/start
 ```
+
+## Demo curriculum
+
+Walk through **one feature at a time** — deploy once, then follow the scripts
+in order:
+
+| Step | Feature |
+|------|---------|
+| 1 | [Health](examples/kive/demos/01-health.md) |
+| 2 | [Counter](examples/kive/demos/02-counter.md) |
+| 3 | [Load (CPU)](examples/kive/demos/03-load-cpu.md) |
+| 4 | [File cat](examples/kive/demos/04-cat-file.md) |
+| 5 | [Observe logs](examples/kive/demos/05-observe-logs.md) |
+
+Full index: [`examples/kive/README.md`](examples/kive/README.md). Use
+`/ui?demo=counter` (or `health`, `load`, `file`) to focus the console during
+live demos.
 
 ## Deploy on Kive
 
@@ -41,9 +56,9 @@ kive deploy --jobs chaosbox
 kive health_check --jobs chaosbox --wait --verbose
 ```
 
-The job pulls `ghcr.io/kive-sh/chaosbox:latest`, binds a Kive-assigned HTTP
-port, and needs no config mount. See [`examples/kive/README.md`](examples/kive/README.md)
-for smoke-test curls and optional peer/TLS config.
+Then run the [demo walkthroughs](examples/kive/demos/) one at a time. Advanced
+multi-job stacks (Redis counter, peers, metrics) live under
+[`examples/kive/advanced/`](examples/kive/advanced/).
 
 ## Layout
 
@@ -60,7 +75,7 @@ internal/
   membership/        peer health tracking + /_cat/nodes
   docs/              OpenAPI spec + Swagger UI (/docs)
   ui/                single-page control console (/ui)
-examples/kive/       starter Kive job (job.conf + Compose template)
+examples/kive/       Kive jobs + demo curriculum (demos/, advanced/)
 ```
 
 ## Build & run
@@ -103,13 +118,14 @@ real network/Redis code paths, not just unit-level logic:
 |------|---------|-------------|
 | `-config` | *(built-in defaults)* | path to config JSON; omit for `:8080`, no peers |
 | `-file` | `<data>/file.txt` | plain text file served by `/_cat/file` |
-| `-data` | `./data` | folder used by the disk load simulator |
-| `-logs` | `./logs` | folder for `chaosbox.log` |
+| `-data` | *(system temp)* | folder used by the disk load simulator |
+| `-logs` | *(stdout only)* | folder for `chaosbox.log`; omit to skip file logging |
 | `-redis` | *(in-memory)* | Redis DSN for a shared counter backend |
 | `-startup-delay` | `0` | seconds to sleep before listening |
 
 Add `-config` when you need peers, TLS, or a custom listen address. Add
-`-redis` when multiple nodes should share the same counter.
+`-redis` when multiple nodes should share the same counter. Pass `-data` and/or
+`-logs` when you want persistent paths instead of temp data and stdout-only logs.
 
 ## Docker
 
@@ -139,12 +155,11 @@ To override defaults, pass flags on the command, e.g.
 Mount a `config.json` (and `peer_ca_cert` PEM, if used) when configuring
 peers or TLS.
 
-### Advanced: multi-node demo (Docker Compose)
+### Local full stack (Docker Compose)
 
-`docker-compose.yml` runs a small chaosbox cluster: a `redis` service (shared
-counter backend) plus two peered nodes, `chaosbox-a` and `chaosbox-b`, each
-configured with the other as its peer (`docker/chaosbox-a.config.json`,
-`docker/chaosbox-b.config.json`).
+For local development, `docker-compose.yml` runs Redis plus two peered nodes
+(`chaosbox-a`, `chaosbox-b`) in one stack. For Kive-native equivalents split
+by feature, see [`examples/kive/advanced/`](examples/kive/advanced/).
 
 ```bash
 docker compose up --build -d   # or: make compose-up
@@ -156,12 +171,16 @@ docker compose up --build -d   # or: make compose-up
 | `chaosbox-b` | 8082 | 8080 |
 | `redis` | 6379 | 6379 |
 
+Demo one feature at a time even on this stack — e.g. membership only:
+
 ```bash
-curl http://localhost:8081/_cat/nodes   # shows chaosbox-a (self) and chaosbox-b, reachable via the chaosbox-b hostname
-curl -X POST http://localhost:8081/count/incr   # incr on chaosbox-a...
-curl -X POST http://localhost:8082/count/incr   # ...and chaosbox-b share the same Redis-backed counter
-curl -X POST http://localhost:8081/load/cpu/start   # fans out to chaosbox-b too; check /_cat/nodes on either node
+curl http://localhost:8081/_cat/nodes
+curl -X POST http://localhost:8081/load/cpu/start
+curl http://localhost:8081/_cat/nodes
+curl -X POST http://localhost:8081/load/cpu/stop
 ```
+
+Counter-with-Redis and other advanced flows: [`examples/kive/advanced/counter-redis/`](examples/kive/advanced/counter-redis/).
 
 `docker compose down` (or `make compose-down`) stops the stack; add
 `rm-volumes=1` to `make compose-down` (or `-v` to `docker compose down`) to

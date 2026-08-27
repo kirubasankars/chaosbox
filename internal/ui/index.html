@@ -314,7 +314,7 @@
     </header>
 
     <div class="grid">
-      <section>
+      <section data-demo="health">
         <h2>This node</h2>
         <div class="chips" id="loadChips">
           <div class="chip"><span class="dot"></span>cpu</div>
@@ -323,7 +323,7 @@
         </div>
       </section>
 
-      <section>
+      <section data-demo="counter">
         <h2>Counter</h2>
         <div class="row">
           <div class="count" id="count">—</div>
@@ -332,12 +332,12 @@
         </div>
       </section>
 
-      <section>
+      <section data-demo="nodes">
         <h2>Cluster nodes</h2>
         <div id="nodes"><p class="empty">Loading…</p></div>
       </section>
 
-      <section>
+      <section data-demo="load">
         <h2>Load simulators</h2>
         <div class="params">
           <label>min_pct<input id="min_pct" type="number" value="60" min="1" max="100" /></label>
@@ -348,12 +348,12 @@
         <div class="load-grid" id="loadActions"></div>
       </section>
 
-      <section class="log">
+      <section class="log" data-demo="file">
         <h2>File<span class="path">/_cat/file</span></h2>
         <pre id="catFile">Loading…</pre>
       </section>
 
-      <section class="log">
+      <section class="log" data-demo="activity">
         <h2>Activity</h2>
         <pre id="log"></pre>
       </section>
@@ -361,6 +361,22 @@
   </div>
 
   <script>
+    const demoMode = new URLSearchParams(location.search).get("demo");
+    const demoSections = {
+      health: ["health"],
+      counter: ["counter"],
+      load: ["load"],
+      file: ["file"],
+    };
+    if (demoMode && demoSections[demoMode]) {
+      const keep = new Set(demoSections[demoMode]);
+      document.querySelectorAll("section[data-demo]").forEach((el) => {
+        el.hidden = !keep.has(el.dataset.demo);
+      });
+      const sub = document.querySelector(".sub");
+      if (sub) sub.textContent = `demo: ${demoMode}`;
+    }
+
     const kinds = [
       { key: "cpu", label: "CPU", hint: "pulse CPU load", start: "/load/cpu/start", stop: "/load/cpu/stop", params: ["min_pct", "max_pct", "period"] },
       { key: "memory", label: "Memory", hint: "pulse memory hold", start: "/load/mem/start", stop: "/load/mem/stop", params: ["mb", "period"] },
