@@ -80,15 +80,16 @@ func RegisterHandlers(mux *http.ServeMux, c *Controller, wrap func(http.HandlerF
 	mux.HandleFunc("/load/all/start", wrap(func(w http.ResponseWriter, r *http.Request) {
 		minPct := httpx.QueryFloat(r, "min_pct", DefaultCPUMinPct)
 		maxPct := httpx.QueryFloat(r, "max_pct", DefaultCPUMaxPct)
-		var mb, diskMB int
-		if r.URL.Query().Get("mb") == "" {
+		// mem_mb and disk_mb are independent; both fall back to the shared
+		// "mb" param for backward compatibility, then to their own defaults.
+		sharedMB := httpx.QueryInt(r, "mb", 0)
+		memMBOverride := httpx.QueryInt(r, "mem_mb", sharedMB)
+		diskMB := httpx.QueryInt(r, "disk_mb", sharedMB)
+		if diskMB <= 0 {
 			diskMB = DefaultDiskMB
-		} else {
-			mb = httpx.QueryInt(r, "mb", 0)
-			diskMB = mb
 		}
 		period := httpx.QueryPeriod(r, DefaultPeriodSec)
-		memMB, diskPath, err := c.StartAll(minPct, maxPct, mb, diskMB, period)
+		memMB, diskPath, err := c.StartAll(minPct, maxPct, memMBOverride, diskMB, period)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

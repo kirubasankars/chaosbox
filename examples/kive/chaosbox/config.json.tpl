@@ -1,9 +1,0 @@
-{
-  "version": "0.1.0",
-  "listen": ":8080",
-  "tls_cert": "",
-  "tls_key": "",
-  "peers": [],
-  "peer_check_sec": 5,
-  "peer_ca_cert": ""
-}

@@ -1,7 +1,0 @@
-- job_name: chaosbox
-  metrics_path: /metrics
-  static_configs:
-    - targets:
-        - kive:port/chaosbox_http_port
-      labels:
-        kive_job: chaosbox

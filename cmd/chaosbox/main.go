@@ -32,6 +32,9 @@ func main() {
 	if err := applyCLIDefaults(&opts); err != nil {
 		log.Fatal(err)
 	}
+	if err := ensurePaths(opts); err != nil {
+		log.Fatal(err)
+	}
 
 	logOut, closeLog, err := setupLogOutput(opts)
 	if err != nil {
@@ -83,7 +86,13 @@ func main() {
 	}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", api.HealthHandler(cfg.Version, lc.Status))
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/" {
+			http.NotFound(w, r)
+			return
+		}
+		api.HealthHandler(cfg.Version, lc.Status)(w, r)
+	})
 	mux.HandleFunc("/_cat/file", api.CatFileHandler(opts.FilePath))
 	mux.HandleFunc("/_cat/nodes", membership.NodesHandler(mem))
 	mux.HandleFunc("/count", counter.GetHandler(ctr))
