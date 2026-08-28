@@ -28,26 +28,10 @@ API browser.
 curl http://localhost:8080/
 ```
 
-## Demo curriculum
-
-Walk through **one feature at a time** — deploy once, then follow the scripts
-in order:
-
-| Step | Feature |
-|------|---------|
-| 1 | [Health](examples/kive/demos/01-health.md) |
-| 2 | [Counter](examples/kive/demos/02-counter.md) |
-| 3 | [Load (CPU)](examples/kive/demos/03-load-cpu.md) |
-| 4 | [File cat](examples/kive/demos/04-cat-file.md) |
-| 5 | [Observe logs](examples/kive/demos/05-observe-logs.md) |
-
-Full index: [`examples/kive/README.md`](examples/kive/README.md). Use
-`/ui?demo=counter` (or `health`, `load`, `file`) to focus the console during
-live demos.
-
 ## Deploy on Kive
 
-A starter single-node job lives under [`examples/kive/`](examples/kive/):
+A complete single-node job lives under [`examples/kive/`](examples/kive/)
+(Compose, HTTP readiness, Prometheus scrape, Observe dashboards):
 
 ```bash
 cp -R examples/kive/chaosbox workspace/jobs/chaosbox
@@ -56,9 +40,19 @@ kive deploy --jobs chaosbox
 kive health_check --jobs chaosbox --wait --verbose
 ```
 
-Then run the [demo walkthroughs](examples/kive/demos/) one at a time. Advanced
-multi-job stacks (Redis counter, peers, metrics) live under
-[`examples/kive/advanced/`](examples/kive/advanced/).
+After deploy, try the live job (port from `kive cat allocations` or the UI):
+
+```bash
+export BASE_URL=http://<worker-ip>:<chaosbox_http_port>
+curl -sS "${BASE_URL}/"
+curl -sS -X POST "${BASE_URL}/count/incr"
+curl -sS -X POST "${BASE_URL}/load/cpu/start"
+curl -sS "${BASE_URL}/metrics" | head
+```
+
+Open `${BASE_URL}/ui` (or `/ui?demo=counter`) for the control console. With a
+Prometheus job in the bucket, open **Observe → Dashboards → chaosbox**
+(Health / Counter / Load). Full copy/verify steps: [`examples/kive/README.md`](examples/kive/README.md).
 
 ## Layout
 
@@ -75,7 +69,7 @@ internal/
   membership/        peer health tracking + /_cat/nodes
   docs/              OpenAPI spec + Swagger UI (/docs)
   ui/                single-page control console (/ui)
-examples/kive/       Kive jobs + demo curriculum (demos/, advanced/)
+examples/kive/       complete single-node Kive job (Compose + scrape + Observe dashboards)
 ```
 
 ## Build & run
@@ -158,8 +152,8 @@ peers or TLS.
 ### Local full stack (Docker Compose)
 
 For local development, `docker-compose.yml` runs Redis plus two peered nodes
-(`chaosbox-a`, `chaosbox-b`) in one stack. For Kive-native equivalents split
-by feature, see [`examples/kive/advanced/`](examples/kive/advanced/).
+(`chaosbox-a`, `chaosbox-b`) in one stack. For a Kive-native single-node
+deploy, see [`examples/kive/`](examples/kive/).
 
 ```bash
 docker compose up --build -d   # or: make compose-up
@@ -179,8 +173,6 @@ curl -X POST http://localhost:8081/load/cpu/start
 curl http://localhost:8081/_cat/nodes
 curl -X POST http://localhost:8081/load/cpu/stop
 ```
-
-Counter-with-Redis and other advanced flows: [`examples/kive/advanced/counter-redis/`](examples/kive/advanced/counter-redis/).
 
 `docker compose down` (or `make compose-down`) stops the stack; add
 `rm-volumes=1` to `make compose-down` (or `-v` to `docker compose down`) to

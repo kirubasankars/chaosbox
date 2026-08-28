@@ -1,0 +1,28 @@
+groups:
+  # ── Availability ─────────────────────────────────────────────────────────────
+  - name: chaosbox_availability
+    rules:
+      - alert: chaosbox target down
+        expr: up{kive_job="chaosbox"} == 0
+        for: 5m
+        labels:
+          kive_job: chaosbox
+          severity: critical
+        annotations:
+          summary: "[{{ $labels.kive_job }}] down on {{ $labels.instance }}"
+          description: "Prometheus cannot scrape chaosbox /metrics on {{ $labels.instance }} for more than 5 minutes"
+          runbook: chaosbox_target_down
+
+  # ── Load simulators ──────────────────────────────────────────────────────────
+  - name: chaosbox_load
+    rules:
+      - alert: chaosbox load running long
+        expr: max by (kind) (chaosbox_load_running{kive_job="chaosbox"}) == 1
+        for: 30m
+        labels:
+          kive_job: chaosbox
+          severity: warning
+        annotations:
+          summary: "[{{ $labels.kive_job }}] {{ $labels.kind }} load running >30m"
+          description: "chaosbox load simulator kind={{ $labels.kind }} has been running for more than 30 minutes — stop it when the test is done"
+          runbook: chaosbox_load_running

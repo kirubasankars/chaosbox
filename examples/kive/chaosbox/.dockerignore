@@ -1,0 +1,12 @@
+.git
+.gitignore
+.kive-job.crt
+.env
+*.key
+*.log
+
+data/
+logs/
+bin/
+certs/
+secrets/
