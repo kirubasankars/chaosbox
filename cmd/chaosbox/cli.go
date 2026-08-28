@@ -38,6 +38,8 @@ func parseCLI(args []string) (cliOptions, error) {
 	}, nil
 }
 
+// applyCLIDefaults fills in zero-value fields with their defaults and
+// validates flag values. It has no filesystem side-effects.
 func applyCLIDefaults(opts *cliOptions) error {
 	if opts.DataDir == "" {
 		opts.DataDir = filepath.Join(os.TempDir(), "chaosbox", "data")
@@ -48,7 +50,13 @@ func applyCLIDefaults(opts *cliOptions) error {
 	if opts.StartupDelay < 0 {
 		return fmt.Errorf("-startup-delay must be >= 0")
 	}
+	return nil
+}
 
+// ensurePaths creates required directories and the watched file if they do not
+// already exist. Separated from applyCLIDefaults so validation is testable
+// without touching the filesystem.
+func ensurePaths(opts cliOptions) error {
 	if err := os.MkdirAll(opts.DataDir, 0o755); err != nil {
 		return fmt.Errorf("data dir: %w", err)
 	}

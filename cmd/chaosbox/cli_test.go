@@ -47,6 +47,10 @@ func TestApplyCLIDefaults_OnlyStartupDelay(t *testing.T) {
 	if opts.FilePath != wantFile {
 		t.Errorf("FilePath = %q, want %q", opts.FilePath, wantFile)
 	}
+
+	if err := ensurePaths(opts); err != nil {
+		t.Fatalf("ensurePaths: %v", err)
+	}
 	if _, err := os.Stat(opts.FilePath); err != nil {
 		t.Errorf("file.txt should exist: %v", err)
 	}
@@ -100,6 +104,10 @@ func TestApplyCLIDefaults_DataPathPassed(t *testing.T) {
 	wantFile := filepath.Join(dataDir, "file.txt")
 	if opts.FilePath != wantFile {
 		t.Errorf("FilePath = %q, want %q", opts.FilePath, wantFile)
+	}
+
+	if err := ensurePaths(opts); err != nil {
+		t.Fatalf("ensurePaths: %v", err)
 	}
 	if _, err := os.Stat(opts.FilePath); err != nil {
 		t.Errorf("file.txt should exist under passed data dir: %v", err)

@@ -18,6 +18,7 @@ func GetHandler(c Counter) http.HandlerFunc {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+		metrics.ChaosboxCount.Set(float64(n))
 		httpx.WriteJSON(w, http.StatusOK, countResponse{Count: n})
 	}
 }

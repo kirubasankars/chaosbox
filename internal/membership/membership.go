@@ -313,7 +313,10 @@ func (m *Membership) relay(base, method, path, rawQuery string) {
 		slog.Warn("peer.fanout_failed", "peer.ip", peerDisplayIP(base), "path", path, "error", err.Error())
 		return
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_, _ = io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+	}()
 
 	if resp.StatusCode >= 400 {
 		slog.Warn("peer.fanout_failed", "peer.ip", peerDisplayIP(base), "path", path, "status_code", resp.StatusCode)

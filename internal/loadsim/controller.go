@@ -230,8 +230,9 @@ func (c *Controller) StartMem(mbOverride int, period time.Duration) (int, error)
 
 func (c *Controller) StopMem() {
 	c.mu.Lock()
-	defer c.mu.Unlock()
 	c.stopMemLocked()
+	c.mu.Unlock()
+	runtime.GC()
 }
 
 func (c *Controller) stopMemLocked() {
@@ -242,7 +243,6 @@ func (c *Controller) stopMemLocked() {
 	metrics.LoadRunning.WithLabelValues("mem").Set(0)
 	c.memHeld.Store(0)
 	metrics.LoadMemHeldBytes.Set(0)
-	runtime.GC()
 }
 
 func (c *Controller) StartDisk(mb int, period time.Duration) (string, int, error) {
@@ -253,10 +253,9 @@ func (c *Controller) StartDisk(mb int, period time.Duration) (string, int, error
 		period = DefaultPeriodSec * time.Second
 	}
 
-	c.mu.Lock()
-	c.stopDiskLocked()
-	c.mu.Unlock()
-
+	// Prepare the file without holding the lock. A concurrent StartDisk doing
+	// the same thing is harmless: both open the same path and the last writer
+	// wins. The lock is only held for the final cancel/start swap.
 	path := filepath.Join(c.dataDir, diskLoadFileName)
 	wantSize := int64(mb) << 20
 
@@ -297,8 +296,6 @@ func (c *Controller) StartDisk(mb int, period time.Duration) (string, int, error
 
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	// If another start raced in while we were doing file IO above, stop it
-	// before taking ownership of the loop below.
 	c.stopDiskLocked()
 
 	ctx, cancel := context.WithCancel(context.Background())
