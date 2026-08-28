@@ -5,13 +5,10 @@
 package main
 
 import (
-	"flag"
-	"io"
 	"log"
 	"log/slog"
 	"net/http"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -28,54 +25,21 @@ import (
 )
 
 func main() {
-	configPath := flag.String("config", "", "path to config JSON (optional; built-in defaults apply when omitted)")
-	startupDelay := flag.Int("startup-delay", 0, "delay in seconds before starting listeners")
-	filePath := flag.String("file", "", "path to plain text file served by /_cat/file (default: <data>/file.txt)")
-	dataDir := flag.String("data", "", "data folder for disk IO load (default: system temp dir)")
-	logsDir := flag.String("logs", "", "logs folder for chaosbox.log (default: stdout only)")
-	redisDSN := flag.String("redis", "", "Redis DSN (e.g. redis://localhost:6379/0); empty uses in-memory counter")
-	flag.Parse()
-
-	// Flag/config validation happens before the structured logger exists, so
-	// stay on the stdlib logger for these early fatals.
-	if *dataDir == "" {
-		*dataDir = filepath.Join(os.TempDir(), "chaosbox", "data")
+	opts, err := parseCLI(os.Args[1:])
+	if err != nil {
+		log.Fatal(err)
 	}
-	if *filePath == "" {
-		*filePath = filepath.Join(*dataDir, "file.txt")
-	}
-	if *startupDelay < 0 {
-		log.Fatal("-startup-delay must be >= 0")
+	if err := applyCLIDefaults(&opts); err != nil {
+		log.Fatal(err)
 	}
 
-	if err := os.MkdirAll(*dataDir, 0o755); err != nil {
-		log.Fatalf("data dir: %v", err)
+	logOut, closeLog, err := setupLogOutput(opts)
+	if err != nil {
+		log.Fatal(err)
 	}
-	if err := os.MkdirAll(filepath.Dir(*filePath), 0o755); err != nil {
-		log.Fatalf("file dir: %v", err)
-	}
-	if _, err := os.Stat(*filePath); os.IsNotExist(err) {
-		if err := os.WriteFile(*filePath, nil, 0o644); err != nil {
-			log.Fatalf("file: %v", err)
-		}
-	} else if err != nil {
-		log.Fatalf("file: %v", err)
-	}
+	defer closeLog()
 
-	var logOut io.Writer = os.Stdout
-	if *logsDir != "" {
-		if err := os.MkdirAll(*logsDir, 0o755); err != nil {
-			log.Fatalf("logs dir: %v", err)
-		}
-		logFile, err := os.OpenFile(filepath.Join(*logsDir, "chaosbox.log"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
-		if err != nil {
-			log.Fatalf("log file: %v", err)
-		}
-		defer logFile.Close()
-		logOut = io.MultiWriter(os.Stdout, logFile)
-	}
-
-	cfg, err := config.Load(*configPath)
+	cfg, err := config.Load(opts.ConfigPath)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -88,8 +52,8 @@ func main() {
 
 	var ctr counter.Counter
 	backend := "memory"
-	if *redisDSN != "" {
-		rc, err := counter.NewRedis(*redisDSN)
+	if opts.RedisDSN != "" {
+		rc, err := counter.NewRedis(opts.RedisDSN)
 		if err != nil {
 			logging.Fatal("redis.connect_failed", "error", err.Error())
 		}
@@ -100,7 +64,7 @@ func main() {
 	}
 	slog.Info("counter.backend", "backend", backend)
 
-	lc := loadsim.NewController(*dataDir)
+	lc := loadsim.NewController(opts.DataDir)
 
 	mem, err := membership.New(selfAddr, cfg.Version, cfg.Peers, cfg.PeerCheckSec, cfg.PeerCACert)
 	if err != nil {
@@ -113,14 +77,14 @@ func main() {
 		"peer.check_sec", int(mem.CheckInterval().Seconds()),
 	)
 
-	if *startupDelay > 0 {
-		slog.Info("startup.delay", "startup_delay_sec", *startupDelay)
-		time.Sleep(time.Duration(*startupDelay) * time.Second)
+	if opts.StartupDelay > 0 {
+		slog.Info("startup.delay", "startup_delay_sec", opts.StartupDelay)
+		time.Sleep(time.Duration(opts.StartupDelay) * time.Second)
 	}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", api.HealthHandler(cfg.Version, lc.Status))
-	mux.HandleFunc("/_cat/file", api.CatFileHandler(*filePath))
+	mux.HandleFunc("/_cat/file", api.CatFileHandler(opts.FilePath))
 	mux.HandleFunc("/_cat/nodes", membership.NodesHandler(mem))
 	mux.HandleFunc("/count", counter.GetHandler(ctr))
 	mux.HandleFunc("/count/incr", counter.IncrHandler(ctr))
