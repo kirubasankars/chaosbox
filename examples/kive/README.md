@@ -2,7 +2,8 @@
 
 Complete Compose job for deploying chaosbox as a single-node Kive workload.
 Uses the published `ghcr.io/kive-sh/chaosbox:latest` image (no `config.json`
-mount), HTTP readiness, Prometheus scrape, Observe dashboards, and alerts.
+mount), HTTP readiness, Prometheus scrape, Observe dashboards, alerts, and
+Docker log labels for Observe Logs.
 
 ## Prerequisites
 
@@ -42,6 +43,7 @@ export BASE_URL=http://<worker-ip>:<chaosbox_http_port>
 curl -sS "${BASE_URL}/"
 curl -sS -X POST "${BASE_URL}/count/incr"
 curl -sS -X POST "${BASE_URL}/load/cpu/start"
+curl -sS -X POST "${BASE_URL}/log/error"
 curl -sS "${BASE_URL}/metrics" | grep chaosbox_
 ```
 
@@ -60,13 +62,18 @@ With Prometheus allocated, open **Observe → Dashboards → chaosbox**:
 
 Plugin source is catalog-only (`kive build`; `kive push` on a server bucket). Redeploy `prometheus` when scrape or alert files change.
 
+Compose stamps `kive.bucket`, `kive.job`, and `kive.allocation` on the
+container and uses the `json-file` log driver so Coroot / OTEL can collect
+stdout. After `POST /log/error`, open **Observe → Logs** and filter job
+`chaosbox` (ClickHouse `ResourceAttributes['kive.job']`).
+
 ## Files
 
 | File | Role |
 |------|------|
 | `job.conf` | Selectors, memory/CPU, public HTTP port, readiness probe |
 | `Makefile` | `start` / `stop` / `restart` / `status` / `logs` / `test` |
-| `docker-compose.yml.tpl` | Published image bound to `chaosbox_http_port` |
+| `docker-compose.yml.tpl` | Published image, `chaosbox_http_port`, `json-file` logs, `kive.*` labels |
 | `config.env.tpl` | `HTTP_PORT` for `make test` |
 | `.dockerignore` | Default ignore list |
 | `_prometheus/scrape.yaml` | `/metrics` on `chaosbox_http_port`, `kive_job` label |

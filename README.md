@@ -31,7 +31,7 @@ curl http://localhost:8080/
 ## Deploy on Kive
 
 A complete single-node job lives under [`examples/kive/`](examples/kive/)
-(Compose, HTTP readiness, Prometheus scrape, Observe dashboards):
+(Compose, HTTP readiness, Prometheus scrape, Observe dashboards and logs):
 
 ```bash
 cp -R examples/kive/chaosbox workspace/jobs/chaosbox
@@ -47,12 +47,14 @@ export BASE_URL=http://<worker-ip>:<chaosbox_http_port>
 curl -sS "${BASE_URL}/"
 curl -sS -X POST "${BASE_URL}/count/incr"
 curl -sS -X POST "${BASE_URL}/load/cpu/start"
+curl -sS -X POST "${BASE_URL}/log/error"
 curl -sS "${BASE_URL}/metrics" | head
 ```
 
 Open `${BASE_URL}/ui` (or `/ui?demo=counter`) for the control console. With a
 Prometheus job in the bucket, open **Observe → Dashboards → chaosbox**
-(Health / Counter / Load). Full copy/verify steps: [`examples/kive/README.md`](examples/kive/README.md).
+(Health / Counter / Load). Container `kive.*` labels feed **Observe → Logs**
+(filter job `chaosbox`). Full copy/verify steps: [`examples/kive/README.md`](examples/kive/README.md).
 
 ## Layout
 
@@ -69,7 +71,7 @@ internal/
   membership/        peer health tracking + /_cat/nodes
   docs/              OpenAPI spec + Swagger UI (/docs)
   ui/                single-page control console (/ui)
-examples/kive/       complete single-node Kive job (Compose + scrape + Observe dashboards)
+examples/kive/       complete single-node Kive job (Compose + scrape + Observe dashboards and logs)
 ```
 
 ## Build & run
