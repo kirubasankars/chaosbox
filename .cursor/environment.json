@@ -1,0 +1,17 @@
+{
+  "name": "chaosbox",
+  "install": "go mod download && go build -trimpath -o bin/chaosbox ./cmd/chaosbox",
+  "terminals": [
+    {
+      "name": "chaosbox server",
+      "command": "./bin/chaosbox",
+      "description": "chaosbox HTTP server on :8080 (control console at /ui, Swagger UI at /docs, Prometheus metrics at /metrics)."
+    }
+  ],
+  "ports": [
+    {
+      "name": "chaosbox http",
+      "port": 8080
+    }
+  ]
+}
