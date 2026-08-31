@@ -17,6 +17,11 @@ tags:
   - name: logs
   - name: metrics
   - name: ui
+# Optional; only enforced when auth_token is set in config.json.
+security:
+  - BearerAuth: []
+  - TokenHeader: []
+  - TokenQuery: []
 paths:
   /:
     get:
@@ -299,6 +304,22 @@ paths:
                       type: object
                       additionalProperties: { type: boolean }
 components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: >
+        Optional shared token, enabled when auth_token is set in config.json.
+        Present it as "Authorization: Bearer <token>", the X-Auth-Token header,
+        or a ?token= query parameter. Failed auth returns 401 and is logged.
+    TokenHeader:
+      type: apiKey
+      in: header
+      name: X-Auth-Token
+    TokenQuery:
+      type: apiKey
+      in: query
+      name: token
   parameters:
     MinPct:
       name: min_pct

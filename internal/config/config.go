@@ -18,6 +18,9 @@ type Config struct {
 	Peers        []string `json:"peers"`
 	PeerCheckSec int      `json:"peer_check_sec"`
 	PeerCACert   string   `json:"peer_ca_cert"`
+	// AuthToken, when non-empty, is a shared secret required on incoming
+	// requests and sent on outgoing peer probes/fan-out. Empty disables auth.
+	AuthToken string `json:"auth_token"`
 }
 
 // Default returns the built-in configuration used when no config file is
@@ -69,6 +72,9 @@ func merge(base, file Config) Config {
 	}
 	if file.PeerCACert != "" {
 		base.PeerCACert = file.PeerCACert
+	}
+	if file.AuthToken != "" {
+		base.AuthToken = file.AuthToken
 	}
 	return base
 }

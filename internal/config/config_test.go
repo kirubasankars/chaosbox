@@ -82,6 +82,30 @@ func TestLoadExplicitEmptyPeers(t *testing.T) {
 	}
 }
 
+func TestLoadAuthTokenDefaultAndMerge(t *testing.T) {
+	if Default().AuthToken != "" {
+		t.Errorf("default AuthToken = %q, want empty", Default().AuthToken)
+	}
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.json")
+	const body = `{"auth_token": "s3cr3t"}`
+	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.AuthToken != "s3cr3t" {
+		t.Errorf("AuthToken = %q, want s3cr3t", cfg.AuthToken)
+	}
+	if cfg.Listen != ":8080" {
+		t.Errorf("Listen = %q, want default :8080 preserved", cfg.Listen)
+	}
+}
+
 func TestValidateTLSMismatch(t *testing.T) {
 	cfg := Default()
 	cfg.TLSCert = "/path/to/cert.pem"

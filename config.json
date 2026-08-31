@@ -5,5 +5,6 @@
   "tls_key": "",
   "peers": [],
   "peer_check_sec": 5,
-  "peer_ca_cert": ""
+  "peer_ca_cert": "",
+  "auth_token": ""
 }

@@ -195,9 +195,18 @@ When omitted, chaosbox uses built-in defaults (`version` `0.1.0`, `listen`
   "tls_key": "",
   "peers": [],
   "peer_check_sec": 5,
-  "peer_ca_cert": ""
+  "peer_ca_cert": "",
+  "auth_token": ""
 }
 ```
+
+Set `auth_token` to a non-empty string to require a shared token on every
+request (except `/metrics`, `/docs`, and `/docs/openapi.yaml`). Clients present
+it as `Authorization: Bearer <token>`, an `X-Auth-Token` header, or a `?token=`
+query parameter; the browser console at `/ui?token=<token>` reuses it for its
+API calls. The same token is sent on outgoing peer probes and load fan-out, so
+peers authenticate each other. Requests that fail auth get `401` and are logged
+as `auth.failed`. Leave it empty to disable auth (the default).
 
 Set `tls_cert`/`tls_key` to serve HTTPS on `listen` instead of HTTP. `peers`
 lists other chaosbox instances (host:port, or a full `http://`/`https://` URL);

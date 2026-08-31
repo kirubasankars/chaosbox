@@ -46,6 +46,7 @@ type Membership struct {
 	failCounts map[string]int       // consecutive unreachable checks per peer
 	client     *http.Client
 	selfLoad   func() map[string]bool // optional: reports this node's own load state
+	authToken  string                 // optional shared secret sent to peers
 }
 
 func normalizePeer(addr string) string {
@@ -169,6 +170,25 @@ func (m *Membership) SetSelfLoadStatus(fn func() map[string]bool) {
 	m.selfLoad = fn
 }
 
+// SetAuthToken sets the shared secret attached (as Authorization: Bearer) to
+// outgoing peer probes and fan-out relays. An empty token sends no header.
+// Call before Start.
+func (m *Membership) SetAuthToken(token string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.authToken = token
+}
+
+// setAuth adds the Authorization: Bearer header to req when a token is set.
+func (m *Membership) setAuth(req *http.Request) {
+	m.mu.RLock()
+	token := m.authToken
+	m.mu.RUnlock()
+	if token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
+}
+
 func (m *Membership) Start() {
 	go func() {
 		m.checkPeers()
@@ -258,7 +278,12 @@ func (m *Membership) checkPeers() {
 }
 
 func (m *Membership) probe(base string) (up bool, version string, load map[string]bool) {
-	resp, err := m.client.Get(base + "/")
+	req, err := http.NewRequest(http.MethodGet, base+"/", nil)
+	if err != nil {
+		return false, "", nil
+	}
+	m.setAuth(req)
+	resp, err := m.client.Do(req)
 	if err != nil {
 		return false, "", nil
 	}
@@ -325,6 +350,7 @@ func (m *Membership) relay(base, method, path, rawQuery string) {
 		return
 	}
 	req.Header.Set(fanoutHeader, "1")
+	m.setAuth(req)
 
 	resp, err := m.client.Do(req)
 	if err != nil {

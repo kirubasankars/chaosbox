@@ -14,6 +14,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"chaosbox/internal/api"
+	"chaosbox/internal/auth"
 	"chaosbox/internal/config"
 	"chaosbox/internal/counter"
 	"chaosbox/internal/docs"
@@ -74,7 +75,9 @@ func main() {
 		logging.Fatal("membership.init_failed", "error", err.Error())
 	}
 	mem.SetSelfLoadStatus(lc.Status)
+	mem.SetAuthToken(cfg.AuthToken)
 	mem.Start()
+	slog.Info("auth.config", "auth.enabled", cfg.AuthToken != "")
 	slog.Info("membership.start",
 		"peer.count", len(cfg.Peers),
 		"peer.check_sec", int(mem.CheckInterval().Seconds()),
@@ -106,7 +109,11 @@ func main() {
 	mux.HandleFunc("/ui/nodes", ui.NodesHandler(mem))
 	mux.HandleFunc("/log/error", api.LogErrorHandler())
 
-	handler := httpx.RequestLogger(mux)
+	// When auth is enabled, require the token on every route except public
+	// observability/docs endpoints. RequestLogger stays outermost so 401s are
+	// logged too. Auth is a no-op passthrough when no token is configured.
+	authed := auth.Middleware(cfg.AuthToken, mux, "/metrics", "/docs", "/docs/openapi.yaml")
+	handler := httpx.RequestLogger(authed)
 
 	scheme := "http"
 	if cfg.UseTLS() {

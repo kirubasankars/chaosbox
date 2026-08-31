@@ -144,6 +144,33 @@ func TestMembership_ReusesPeerConnections(t *testing.T) {
 	}
 }
 
+// TestMembership_SendsAuthTokenToPeers verifies that when an auth token is
+// configured, outgoing peer probes carry it as an Authorization: Bearer header.
+func TestMembership_SendsAuthTokenToPeers(t *testing.T) {
+	var gotAuth atomic.Value // string
+	gotAuth.Store("")
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		gotAuth.Store(r.Header.Get("Authorization"))
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{"status": "ok", "version": "1.0.0"})
+	})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	m, err := membership.New("self:0", "test", []string{srv.URL}, 1, "")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	m.SetAuthToken("s3cr3t")
+	m.Start()
+
+	pollUntil(t, 3*time.Second, 20*time.Millisecond, "peer probed with auth header", func() bool {
+		return gotAuth.Load().(string) == "Bearer s3cr3t"
+	})
+}
+
 func TestMembership_UnreachablePeerMarkedDown(t *testing.T) {
 	up := fakeNodeServer(t, "1.0.0", nil)
 
