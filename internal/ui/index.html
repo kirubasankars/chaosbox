@@ -19,8 +19,7 @@
       --teal: #3ecfad;
       --rose: #ef6b7b;
       --ok: #5fd38d;
-      --shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
-      --radius: 14px;
+      --radius: 4px;
     }
 
     * { box-sizing: border-box; }
@@ -28,10 +27,7 @@
     body {
       font-family: "DM Sans", sans-serif;
       color: var(--ink);
-      background:
-        radial-gradient(1200px 600px at 10% -10%, rgba(230, 162, 60, 0.16), transparent 55%),
-        radial-gradient(900px 500px at 100% 0%, rgba(62, 207, 173, 0.12), transparent 50%),
-        linear-gradient(180deg, #0f1217 0%, var(--bg0) 40%, #10141a 100%);
+      background: var(--bg0);
     }
 
     .wrap {
@@ -46,7 +42,6 @@
       justify-content: space-between;
       gap: 1rem;
       margin-bottom: 1.4rem;
-      animation: rise 0.5s ease both;
     }
     .brand {
       font-family: "IBM Plex Mono", monospace;
@@ -76,10 +71,8 @@
       border-radius: 50%;
       background: var(--ok);
       margin-right: 0.35rem;
-      box-shadow: 0 0 0 0 rgba(95, 211, 141, 0.55);
-      animation: ping 1.8s ease infinite;
     }
-    .pulse.err { background: var(--rose); box-shadow: none; animation: none; }
+    .pulse.err { background: var(--rose); }
 
     .grid {
       display: grid;
@@ -93,17 +86,11 @@
     }
 
     section {
-      background: color-mix(in srgb, var(--bg1) 88%, transparent);
+      background: var(--bg1);
       border: 1px solid var(--line);
       border-radius: var(--radius);
-      box-shadow: var(--shadow);
       padding: 1rem 1.1rem 1.15rem;
-      backdrop-filter: blur(8px);
-      animation: rise 0.55s ease both;
     }
-    section:nth-child(2) { animation-delay: 0.05s; }
-    section:nth-child(3) { animation-delay: 0.1s; }
-    section:nth-child(4) { animation-delay: 0.15s; }
     h2 {
       margin: 0 0 0.85rem;
       font-size: 0.78rem;
@@ -120,17 +107,16 @@
       gap: 0.45rem;
       min-width: 6.5rem;
       padding: 0.55rem 0.75rem;
-      border-radius: 999px;
+      border-radius: var(--radius);
       border: 1px solid var(--line);
       background: var(--bg2);
       font-family: "IBM Plex Mono", monospace;
       font-size: 0.82rem;
-      transition: border-color 0.2s, background 0.2s, transform 0.2s;
+      transition: border-color 0.15s, background 0.15s;
     }
     .chip.on {
-      border-color: color-mix(in srgb, var(--teal) 55%, var(--line));
-      background: color-mix(in srgb, var(--teal) 14%, var(--bg2));
-      transform: translateY(-1px);
+      border-color: var(--teal);
+      background: color-mix(in srgb, var(--teal) 16%, var(--bg2));
     }
     .dot {
       width: 0.55rem;
@@ -162,7 +148,7 @@
     .badge {
       display: inline-block;
       padding: 0.12rem 0.45rem;
-      border-radius: 999px;
+      border-radius: var(--radius);
       font-size: 0.72rem;
       border: 1px solid var(--line);
     }
@@ -188,24 +174,29 @@
       border: 1px solid var(--line);
       background: var(--bg2);
       color: var(--ink);
-      border-radius: 10px;
+      border-radius: var(--radius);
       padding: 0.55rem 0.85rem;
       font: 600 0.86rem/1 "DM Sans", sans-serif;
       cursor: pointer;
-      transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+      transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
     }
-    button:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--amber) 45%, var(--line)); }
-    button:active { transform: translateY(0); }
+    button:hover { border-color: var(--amber); }
+    button:active { background: color-mix(in srgb, var(--amber) 16%, var(--bg2)); }
     button.primary {
-      background: linear-gradient(180deg, color-mix(in srgb, var(--amber) 88%, white), var(--amber));
+      background: var(--amber);
       color: #1a1206;
-      border-color: transparent;
+      border-color: var(--amber);
+    }
+    button.primary:hover {
+      background: color-mix(in srgb, var(--amber) 85%, white);
+      border-color: color-mix(in srgb, var(--amber) 85%, white);
     }
     button.danger {
       background: color-mix(in srgb, var(--rose) 18%, var(--bg2));
-      border-color: color-mix(in srgb, var(--rose) 40%, var(--line));
+      border-color: color-mix(in srgb, var(--rose) 45%, var(--line));
     }
-    button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    button.danger:hover { border-color: var(--rose); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
 
     .load-grid {
       display: grid;
@@ -217,7 +208,7 @@
       gap: 0.65rem;
       align-items: center;
       padding: 0.75rem 0.8rem;
-      border-radius: 12px;
+      border-radius: var(--radius);
       border: 1px solid var(--line);
       background: var(--bg2);
     }
@@ -245,7 +236,7 @@
       border: 1px solid var(--line);
       background: var(--bg0);
       color: var(--ink);
-      border-radius: 8px;
+      border-radius: var(--radius);
       padding: 0.4rem 0.5rem;
       font: 500 0.82rem/1 "IBM Plex Mono", monospace;
     }
@@ -261,9 +252,7 @@
     .log {
       margin-top: 1rem;
       grid-column: 1 / -1;
-      animation-delay: 0.2s;
     }
-    .log + .log { animation-delay: 0.25s; }
     h2 .path {
       letter-spacing: 0;
       text-transform: none;
@@ -287,16 +276,6 @@
     #log .err { color: var(--rose); }
 
     .empty { color: var(--muted); font-size: 0.85rem; }
-
-    @keyframes rise {
-      from { opacity: 0; transform: translateY(8px); }
-      to { opacity: 1; transform: none; }
-    }
-    @keyframes ping {
-      0% { box-shadow: 0 0 0 0 rgba(95, 211, 141, 0.55); }
-      70% { box-shadow: 0 0 0 10px rgba(95, 211, 141, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(95, 211, 141, 0); }
-    }
   </style>
 </head>
 <body>
