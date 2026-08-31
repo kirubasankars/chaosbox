@@ -2,6 +2,7 @@ package membership_test
 
 import (
 	"encoding/json"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -97,6 +98,49 @@ func TestMembership_ProbesPeers(t *testing.T) {
 	}
 	if b.Load["cpu"] {
 		t.Errorf("peer B load.cpu = %v, want false", b.Load["cpu"])
+	}
+}
+
+// TestMembership_ReusesPeerConnections verifies that repeated probes to the
+// same peer reuse a pooled keep-alive connection instead of dialing a new TCP
+// connection each interval. The peer server counts newly-accepted connections
+// via ConnState; after several sequential probes only one connection should
+// have been opened.
+func TestMembership_ReusesPeerConnections(t *testing.T) {
+	var newConns, requests atomic.Int64
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"status":  "ok",
+			"version": "1.0.0",
+		})
+	})
+
+	srv := httptest.NewUnstartedServer(mux)
+	srv.Config.ConnState = func(_ net.Conn, state http.ConnState) {
+		if state == http.StateNew {
+			newConns.Add(1)
+		}
+	}
+	srv.Start()
+	defer srv.Close()
+
+	m, err := membership.New("self:0", "test", []string{srv.URL}, 1, "")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	m.Start()
+
+	// Wait until the peer has been probed several times (across intervals).
+	pollUntil(t, 5*time.Second, 20*time.Millisecond, "peer probed multiple times", func() bool {
+		return requests.Load() >= 3
+	})
+
+	if got := newConns.Load(); got != 1 {
+		t.Fatalf("opened %d connections for %d probes; want a single reused connection", got, requests.Load())
 	}
 }
 

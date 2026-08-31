@@ -65,27 +65,45 @@ func peerDisplayIP(base string) string {
 	return base
 }
 
-// buildClient constructs the HTTP client used to probe peers. When caCertPath
+const (
+	// maxIdlePeerConns bounds keep-alive connections kept in the pool for
+	// reuse across peer probes and fan-out. Go's default MaxIdleConnsPerHost
+	// is only 2, which forces extra connections to be closed (and redialed)
+	// whenever probe and fan-out traffic to the same peer overlaps; raising
+	// it lets a small, stable cluster reuse connections instead.
+	maxIdlePeerConns    = 100
+	peerIdleConnTimeout = 90 * time.Second
+)
+
+// buildClient constructs the HTTP client used to probe and relay to peers.
+// It reuses connections via a keep-alive connection pool, so repeated peer
+// traffic does not open a new TCP/TLS connection each time. When caCertPath
 // is set, it is used as the sole trust root for verifying peer TLS certs
 // (e.g. when peers are configured with https:// addresses and a private CA).
 func buildClient(caCertPath string) (*http.Client, error) {
-	client := &http.Client{Timeout: checkTimeout}
-	if caCertPath == "" {
-		return client, nil
+	// Clone the default transport so we keep its dialer timeouts, proxy
+	// handling, and HTTP/2 support while tuning connection pooling for reuse.
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.MaxIdleConns = maxIdlePeerConns
+	transport.MaxIdleConnsPerHost = maxIdlePeerConns
+	transport.IdleConnTimeout = peerIdleConnTimeout
+
+	if caCertPath != "" {
+		pemData, err := os.ReadFile(caCertPath)
+		if err != nil {
+			return nil, fmt.Errorf("read peer ca cert: %w", err)
+		}
+		pool := x509.NewCertPool()
+		if !pool.AppendCertsFromPEM(pemData) {
+			return nil, fmt.Errorf("parse peer ca cert: no valid certificates found in %s", caCertPath)
+		}
+		transport.TLSClientConfig = &tls.Config{RootCAs: pool}
 	}
 
-	pemData, err := os.ReadFile(caCertPath)
-	if err != nil {
-		return nil, fmt.Errorf("read peer ca cert: %w", err)
-	}
-	pool := x509.NewCertPool()
-	if !pool.AppendCertsFromPEM(pemData) {
-		return nil, fmt.Errorf("parse peer ca cert: no valid certificates found in %s", caCertPath)
-	}
-	client.Transport = &http.Transport{
-		TLSClientConfig: &tls.Config{RootCAs: pool},
-	}
-	return client, nil
+	return &http.Client{
+		Timeout:   checkTimeout,
+		Transport: transport,
+	}, nil
 }
 
 // New builds a Membership tracking self plus the given peers. checkSec <= 0
