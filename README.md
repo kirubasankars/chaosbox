@@ -30,8 +30,9 @@ curl http://localhost:8080/
 
 ## Deploy on Kive
 
-A complete single-node job lives under [`examples/kive/`](examples/kive/)
-(Compose, HTTP readiness, Prometheus scrape, Observe dashboards and logs):
+A complete job lives under [`examples/kive/`](examples/kive/)
+(Compose, peer list from Kive allocations, HTTP readiness, Prometheus
+scrape, Observe dashboards and logs):
 
 ```bash
 cp -R examples/kive/chaosbox workspace/jobs/chaosbox
@@ -45,6 +46,7 @@ After deploy, try the live job (port from `kive cat allocations` or the UI):
 ```bash
 export BASE_URL=http://<worker-ip>:<chaosbox_http_port>
 curl -sS "${BASE_URL}/"
+curl -sS "${BASE_URL}/_cat/nodes"
 curl -sS -X POST "${BASE_URL}/count/incr"
 curl -sS -X POST "${BASE_URL}/load/cpu/start"
 curl -sS -X POST "${BASE_URL}/log/error"
@@ -71,7 +73,7 @@ internal/
   membership/        peer health tracking + /_cat/nodes
   docs/              OpenAPI spec + Swagger UI (/docs)
   ui/                single-page control console (/ui)
-examples/kive/       complete single-node Kive job (Compose + scrape + Observe dashboards and logs)
+examples/kive/       complete Kive job (Compose + peer config + scrape + Observe dashboards and logs)
 ```
 
 ## Build & run
@@ -154,8 +156,8 @@ peers or TLS.
 ### Local full stack (Docker Compose)
 
 For local development, `docker-compose.yml` runs Redis plus two peered nodes
-(`chaosbox-a`, `chaosbox-b`) in one stack. For a Kive-native single-node
-deploy, see [`examples/kive/`](examples/kive/).
+(`chaosbox-a`, `chaosbox-b`) in one stack. For a Kive-native deploy (peer list
+filled from allocations), see [`examples/kive/`](examples/kive/).
 
 ```bash
 docker compose up --build -d   # or: make compose-up
