@@ -276,6 +276,40 @@
     #log .err { color: var(--rose); }
 
     .empty { color: var(--muted); font-size: 0.85rem; }
+
+    .tabbar {
+      display: flex;
+      gap: 0.25rem;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 0.85rem;
+    }
+    .tabbar .tab {
+      appearance: none;
+      background: transparent;
+      border: 0;
+      border-bottom: 2px solid transparent;
+      border-radius: 0;
+      color: var(--muted);
+      font: 700 0.78rem/1 "DM Sans", sans-serif;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 0.5rem 0.5rem 0.55rem;
+      margin-bottom: -1px;
+      cursor: pointer;
+      transition: color 0.15s ease, border-color 0.15s ease;
+    }
+    .tabbar .tab:hover { color: var(--ink); border-color: var(--line); }
+    .tabbar .tab:active { background: transparent; }
+    .tabbar .tab.active { color: var(--ink); border-color: var(--amber); }
+    .tabbar .tab .path {
+      letter-spacing: 0;
+      text-transform: none;
+      font-weight: 500;
+      font-family: "IBM Plex Mono", monospace;
+      opacity: 0.7;
+      margin-left: 0.35rem;
+    }
+    .tabpanel[hidden] { display: none; }
   </style>
 </head>
 <body>
@@ -292,6 +326,12 @@
       </div>
     </header>
 
+    <div class="tabbar" role="tablist">
+      <button class="tab active" type="button" data-tab="main">Main</button>
+      <button class="tab" type="button" data-tab="activity">Activity</button>
+    </div>
+
+    <div class="tabpanel" data-panel="main">
     <div class="grid">
       <section data-demo="health">
         <h2>This node</h2>
@@ -331,8 +371,11 @@
         <h2>File<span class="path">/_cat/file</span></h2>
         <pre id="catFile">Loading…</pre>
       </section>
+      </div>
+    </div>
 
-      <section class="log" data-demo="activity">
+    <div class="tabpanel" data-panel="activity" hidden>
+      <section class="log">
         <h2>Activity</h2>
         <pre id="log"></pre>
       </section>
@@ -535,6 +578,20 @@
         const u = new URL(a.getAttribute("href"), location.origin);
         u.searchParams.set("token", authToken);
         a.setAttribute("href", u.pathname + u.search);
+      });
+    }
+
+    const tabbar = document.querySelector(".tabbar");
+    if (tabbar) {
+      const container = tabbar.parentElement;
+      tabbar.addEventListener("click", (e) => {
+        const tab = e.target.closest(".tab");
+        if (!tab) return;
+        const name = tab.dataset.tab;
+        tabbar.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t === tab));
+        container.querySelectorAll(":scope > .tabpanel").forEach((p) => {
+          p.hidden = p.dataset.panel !== name;
+        });
       });
     }
 
